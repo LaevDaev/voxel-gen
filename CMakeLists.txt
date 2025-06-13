@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(MyGame)
+project(Vvox)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,15 +25,50 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+
+file(GLOB SHADER_SOURCE_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+)
+
+set(SPIRV_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+file(MAKE_DIRECTORY ${SPIRV_OUTPUT_DIR})
+
+set(COMPILED_SHADERS "")
+
+foreach(SHADER ${SHADER_SOURCE_FILES})
+    get_filename_component(FILE_NAME ${SHADER} NAME)
+    set(SPIRV_FILE "${SPIRV_OUTPUT_DIR}/${FILE_NAME}.spv")
+
+    add_custom_command(
+        OUTPUT ${SPIRV_FILE}
+        COMMAND glslc ${SHADER} -o ${SPIRV_FILE}
+        DEPENDS ${SHADER}
+        COMMENT "Compiling ${FILE_NAME} to SPIR-V"
+        VERBATIM
+    )
+
+    list(APPEND COMPILED_SHADERS ${SPIRV_FILE})
+endforeach()
+
+add_custom_target(CompileShaders ALL DEPENDS ${COMPILED_SHADERS})
+
+
 # Add executable
-add_executable(MyGame src/main.cpp)
+add_executable(Vvox 
+  src/main.cpp
+  src/vvox_app.cpp
+  src/vvox_window.cpp
+  )
+
+  add_dependencies(Vvox CompileShaders)
 
 # Include Vulkan, GLFW, GLM
-target_link_libraries(MyGame PRIVATE Vulkan::Vulkan glfw glm)
-target_include_directories(MyGame PRIVATE ${Vulkan_INCLUDE_DIR})
+target_link_libraries(Vvox PRIVATE Vulkan::Vulkan glfw glm)
+target_include_directories(Vvox PRIVATE ${Vulkan_INCLUDE_DIR})
 
 # For macOS Vulkan via MoltenVK
 if(APPLE)
     find_library(MOLTENVK MoltenVK REQUIRED)
-    target_link_libraries(MyGame PRIVATE ${MOLTENVK})
+    target_link_libraries(Vvox PRIVATE ${MOLTENVK})
 endif()
