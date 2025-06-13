@@ -4,7 +4,10 @@
 #include "vvox_pipeline.hpp"
 #include "vvox_window.hpp"
 #include "vvox_device.hpp"
+#include "vvox_swap_chain.hpp"
 
+#include <memory>
+#include <vector>
 
 namespace vvox
 {
@@ -13,21 +16,28 @@ namespace vvox
   public:
     static constexpr int WIDTH = 800;
     static constexpr int HEIGHT = 800;
+    VvoxApp();
+    ~VvoxApp();
 
+    VvoxApp(const VvoxApp&) = delete;
+    VvoxApp &operator=(const VvoxApp&) = delete;
+    
     void run();
-
+  
   private:
+    void createPipelineLayout(); 
+    void createPipeline(); 
+    void createCommandBuffers(); 
+    void drawFrame(); 
     VvoxWindow vvoxWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
     
     VvoxDevice vvoxDevice{vvoxWindow};
+    VvoxSwapChain vvoxSwapChain{vvoxDevice, vvoxWindow.getExtend()};
 
     const std::string vertShaderPath = std::string(COMPILED_SHADERS_DIR) + "/simp_shader.vert.spv";
     const std::string fragShaderPath = std::string(COMPILED_SHADERS_DIR) + "/simp_shader.frag.spv";
-    VvoxPipeline vvoxPipeline{
-      vvoxDevice,
-      vertShaderPath,
-      fragShaderPath,
-      VvoxPipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)
-    };
+    std::unique_ptr<VvoxPipeline> vvoxPipeline;
+    VkPipelineLayout pipelineLayout;
+    std::vector<VkCommandBuffer> commandBuffer;
   };
 } // namespace vvox

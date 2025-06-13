@@ -67,6 +67,7 @@ add_executable(Vvox
   src/vvox_window.cpp
   src/vvox_pipeline.cpp
   src/vvox_device.cpp
+  src/vvox_swap_chain.cpp
   )
 
 add_dependencies(Vvox CompileShaders)
