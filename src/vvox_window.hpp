@@ -17,7 +17,7 @@ namespace vvox
         VvoxWindow(const VvoxWindow &) = delete;
         VvoxWindow &operator=(const VvoxWindow &) = delete;
 
-
+        void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface);
 
         bool shouldClose() { return glfwWindowShouldClose(window);}
     private:

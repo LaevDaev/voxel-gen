@@ -3,7 +3,7 @@
 namespace vvox
 {
     void VvoxApp::run() {
-        while(!VvoxWindow.shouldClose()) {
+        while(!vvoxWindow.shouldClose()) {
             glfwPollEvents();
         }
     }
