@@ -23,13 +23,34 @@ namespace vvox
 
         vkDeviceWaitIdle(vvoxDevice.device()); 
     }
-    void VvoxApp::loadModels() {
-        std::vector<VvoxModel::Vertex> vertices {
-            {{0.0f, -0.5f}},
-            {{0.5f, 0.5f}},
-            {{-0.5f, 0.5f}}
-        };
+    void myfrac(std::vector<VvoxModel::Vertex> *vertices, int depth, glm::vec2 left, glm::vec2 right) {
+        if(depth < 1) return;
+        vertices->push_back({left});
+        auto v_temp = left - right;
+        auto pp = right + (v_temp * 0.5f);
+        auto t = - v_temp.y;
+        v_temp.y = v_temp.x;
+        v_temp.x = t;
+        pp += v_temp * 0.2f;
+        vertices->push_back({pp});
+        vertices->push_back({right});
+        myfrac(
+            vertices,
+            depth - 1,
+            left,
+            pp
+        );
+        myfrac(
+            vertices,
+            depth - 1,
+            pp,
+            right
+        );
 
+    }
+    void VvoxApp::loadModels() {
+        std::vector<VvoxModel::Vertex> vertices;
+        myfrac(&vertices, 15, {-0.5f,0.5f}, {0.5f, 0.5f});
         vvoxmodel = std::make_unique<VvoxModel>(vvoxDevice, vertices);
     }
 
@@ -102,7 +123,7 @@ namespace vvox
             vvoxPipeline->bind(commandBuffer[i]);
             vvoxmodel->bind(commandBuffer[i]);
             vvoxmodel->draw(commandBuffer[i]);
-            
+
             vkCmdEndRenderPass(commandBuffer[i]);
             if (vkEndCommandBuffer(commandBuffer[i]) != VK_SUCCESS) {
                 std::runtime_error("failed to record to command Buffer");
