@@ -27,11 +27,11 @@ FetchContent_MakeAvailable(glm)
 
 
 file(GLOB SHADER_SOURCE_FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
-    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+    "shaders/*.vert"
+    "shaders/*.frag"
 )
 
-set(SPIRV_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+set(SPIRV_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/compiled_shaders/")
 file(MAKE_DIRECTORY ${SPIRV_OUTPUT_DIR})
 
 set(COMPILED_SHADERS "")
@@ -51,17 +51,24 @@ foreach(SHADER ${SHADER_SOURCE_FILES})
     list(APPEND COMPILED_SHADERS ${SPIRV_FILE})
 endforeach()
 
+file(RELATIVE_PATH COMPILED_SHADERS_REL_PATH
+     "${CMAKE_CURRENT_SOURCE_DIR}/src"
+     "${SPIRV_OUTPUT_DIR}"
+)
+
+
 add_custom_target(CompileShaders ALL DEPENDS ${COMPILED_SHADERS})
 
-
+add_compile_definitions(COMPILED_SHADERS_DIR="${COMPILED_SHADERS_REL_PATH}")
 # Add executable
 add_executable(Vvox 
   src/main.cpp
   src/vvox_app.cpp
   src/vvox_window.cpp
+  src/vvox_pipeline.cpp
   )
 
-  add_dependencies(Vvox CompileShaders)
+add_dependencies(Vvox CompileShaders)
 
 # Include Vulkan, GLFW, GLM
 target_link_libraries(Vvox PRIVATE Vulkan::Vulkan glfw glm)
