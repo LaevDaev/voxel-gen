@@ -1,10 +1,10 @@
 #pragma once
 
-
 #include "vvox_pipeline.hpp"
 #include "vvox_window.hpp"
 #include "vvox_device.hpp"
 #include "vvox_swap_chain.hpp"
+#include "vvox_model.hpp"
 
 #include <memory>
 #include <vector>
@@ -19,18 +19,19 @@ namespace vvox
     VvoxApp();
     ~VvoxApp();
 
-    VvoxApp(const VvoxApp&) = delete;
-    VvoxApp &operator=(const VvoxApp&) = delete;
-    
+    VvoxApp(const VvoxApp &) = delete;
+    VvoxApp &operator=(const VvoxApp &) = delete;
+
     void run();
-  
+
   private:
-    void createPipelineLayout(); 
-    void createPipeline(); 
-    void createCommandBuffers(); 
-    void drawFrame(); 
+    void loadModels();
+    void createPipelineLayout();
+    void createPipeline();
+    void createCommandBuffers();
+    void drawFrame();
     VvoxWindow vvoxWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
-    
+
     VvoxDevice vvoxDevice{vvoxWindow};
     VvoxSwapChain vvoxSwapChain{vvoxDevice, vvoxWindow.getExtend()};
 
@@ -39,5 +40,6 @@ namespace vvox
     std::unique_ptr<VvoxPipeline> vvoxPipeline;
     VkPipelineLayout pipelineLayout;
     std::vector<VkCommandBuffer> commandBuffer;
+    std::unique_ptr<VvoxModel> vvoxmodel;
   };
 } // namespace vvox

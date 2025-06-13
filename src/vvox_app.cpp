@@ -5,6 +5,7 @@
 namespace vvox
 {
     VvoxApp::VvoxApp() {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffers();
@@ -22,6 +23,16 @@ namespace vvox
 
         vkDeviceWaitIdle(vvoxDevice.device()); 
     }
+    void VvoxApp::loadModels() {
+        std::vector<VvoxModel::Vertex> vertices {
+            {{0.0f, -0.5f}},
+            {{0.5f, 0.5f}},
+            {{-0.5f, 0.5f}}
+        };
+
+        vvoxmodel = std::make_unique<VvoxModel>(vvoxDevice, vertices);
+    }
+
 
     void VvoxApp::createPipelineLayout()
     {
@@ -89,8 +100,9 @@ namespace vvox
 
             vkCmdBeginRenderPass(commandBuffer[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vvoxPipeline->bind(commandBuffer[i]);
-            vkCmdDraw(commandBuffer[i], 3, 1, 0, 0);
-
+            vvoxmodel->bind(commandBuffer[i]);
+            vvoxmodel->draw(commandBuffer[i]);
+            
             vkCmdEndRenderPass(commandBuffer[i]);
             if (vkEndCommandBuffer(commandBuffer[i]) != VK_SUCCESS) {
                 std::runtime_error("failed to record to command Buffer");
