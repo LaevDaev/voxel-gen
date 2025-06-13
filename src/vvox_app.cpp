@@ -23,6 +23,21 @@ namespace vvox
 
         vkDeviceWaitIdle(vvoxDevice.device()); 
     }
+    void sierpinski(std::vector<VvoxModel::Vertex> *vertices, int depth, glm::vec2 bl, glm::vec2 t, glm::vec2 br) {
+        if(depth < 1) {
+            vertices->push_back({bl});
+            vertices->push_back({t});
+            vertices->push_back({br});
+            return;
+        };
+        glm::vec2 l, r, d;
+        l = t + (bl-t)*0.5f;
+        r = t + (br-t)*0.5f;
+        d = br + (bl-br)*0.5f;
+        sierpinski(vertices, depth-1, bl, l, d);
+        sierpinski(vertices, depth-1, l, t, r);
+        sierpinski(vertices, depth-1, d, r, br);
+}
     void myfrac(std::vector<VvoxModel::Vertex> *vertices, int depth, glm::vec2 left, glm::vec2 right) {
         if(depth < 1) return;
         vertices->push_back({left});
@@ -50,7 +65,7 @@ namespace vvox
     }
     void VvoxApp::loadModels() {
         std::vector<VvoxModel::Vertex> vertices;
-        myfrac(&vertices, 15, {-0.5f,0.5f}, {0.5f, 0.5f});
+        sierpinski(&vertices, 8, {-0.5f,0.5f}, {0.0f, -0.5f}, {0.5f, 0.5f});
         vvoxmodel = std::make_unique<VvoxModel>(vvoxDevice, vertices);
     }
 
