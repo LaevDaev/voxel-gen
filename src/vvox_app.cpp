@@ -88,7 +88,11 @@ namespace vvox
     }
     void VvoxApp::createPipeline()
     {
-        auto pipelineConfig = VvoxPipeline::defaultPipelineConfigInfo(vvoxSwapChain->width(), vvoxSwapChain->height());
+        assert(vvoxSwapChain != nullptr && "cannot create pipeline before swap chain");
+        assert(pipelineLayout != nullptr && "cannot create pipeline before pipelinelayout");
+
+        PipelineConfigInfo pipelineConfig{};
+        VvoxPipeline::defaultPipelineConfigInfo(pipelineConfig);
         pipelineConfig.renderPass = vvoxSwapChain->getRenderPass();
         pipelineConfig.pipelineLayout = pipelineLayout;
         const std::string vertShaderPath = std::string(COMPILED_SHADERS_DIR) + "/simp_shader.vert.spv";
@@ -107,11 +111,28 @@ namespace vvox
             glfwWaitEvents();
         }
         vkDeviceWaitIdle(vvoxDevice.device());
-        vvoxSwapChain = nullptr;
+        if(vvoxSwapChain == nullptr) {
         vvoxSwapChain = std::make_unique<VvoxSwapChain>(vvoxDevice, extent);
+    } else {
+        vvoxSwapChain = std::make_unique<VvoxSwapChain>(vvoxDevice, extent, std::move(vvoxSwapChain));
+        if(vvoxSwapChain->imageCount() != commandBuffers.size()) {
+            freeCommandBuffers();
+            createCommandBuffers();
+        }    
+    }
+        //TODO CHECK IF RENDER PASS COMPATIBLE --> do nothing
         createPipeline();
 
     }
+void VvoxApp::freeCommandBuffers() {
+    vkFreeCommandBuffers(
+        vvoxDevice.device(), 
+        vvoxDevice.getCommandPool(), 
+        static_cast<float>(commandBuffers.size()), 
+        commandBuffers.data());
+    commandBuffers.clear();
+}
+
     void VvoxApp::createCommandBuffers()
     {
         commandBuffers.resize(vvoxSwapChain->imageCount());
@@ -154,6 +175,17 @@ namespace vvox
 
         vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(vvoxSwapChain->getSwapChainExtent().width);
+        viewport.height = static_cast<float>(vvoxSwapChain->getSwapChainExtent().height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        VkRect2D scissor{{0,0}, vvoxSwapChain->getSwapChainExtent()};
+        vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
         vvoxPipeline->bind(commandBuffers[imageIndex]);
         vvoxmodel->bind(commandBuffers[imageIndex]);
         vvoxmodel->draw(commandBuffers[imageIndex]);
