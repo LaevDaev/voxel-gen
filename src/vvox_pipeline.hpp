@@ -34,7 +34,7 @@ namespace vvox
         ~VvoxPipeline();
 
         VvoxPipeline(const VvoxPipeline &) = delete;
-        void operator=(const VvoxPipeline) = delete;
+        VvoxPipeline& operator=(const VvoxPipeline) = delete;
 
         void bind(VkCommandBuffer commandBuffer);
 

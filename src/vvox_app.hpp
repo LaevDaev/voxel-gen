@@ -30,16 +30,19 @@ namespace vvox
     void createPipeline();
     void createCommandBuffers();
     void drawFrame();
+    void recreateSwapChain();
+    void recordCommandBuffer(int imageIndex);
+
+
     VvoxWindow vvoxWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
 
     VvoxDevice vvoxDevice{vvoxWindow};
-    VvoxSwapChain vvoxSwapChain{vvoxDevice, vvoxWindow.getExtend()};
-
+    std::unique_ptr<VvoxSwapChain> vvoxSwapChain;
     const std::string vertShaderPath = std::string(COMPILED_SHADERS_DIR) + "/simp_shader.vert.spv";
     const std::string fragShaderPath = std::string(COMPILED_SHADERS_DIR) + "/simp_shader.frag.spv";
     std::unique_ptr<VvoxPipeline> vvoxPipeline;
     VkPipelineLayout pipelineLayout;
-    std::vector<VkCommandBuffer> commandBuffer;
+    std::vector<VkCommandBuffer> commandBuffers;
     std::unique_ptr<VvoxModel> vvoxmodel;
   };
 } // namespace vvox
