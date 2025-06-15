@@ -1,12 +1,26 @@
 #include "vvox_app.hpp"
+
+//libs
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+//std
 #include <stdexcept>
 #include <array>
+//#include <iostream>
 
 namespace vvox
 {
+    struct SimplePushConstantData {
+        glm::mat2 transform{1.f};
+        glm::vec2 offset;
+        alignas(16) glm::vec3 color;
+    };
+
     VvoxApp::VvoxApp()
     {
-        loadModels();
+        loadGameObjects();
         createPipelineLayout();
         recreateSwapChain();
         createCommandBuffers();
@@ -17,6 +31,7 @@ namespace vvox
     }
     void VvoxApp::run()
     {
+        //std::cout << "maxPushConstantSize = " << vvoxDevice.properties.limits.maxPushConstantsSize << "\n"; 
         while (!vvoxWindow.shouldClose())
         {
             glfwPollEvents();
@@ -66,21 +81,43 @@ namespace vvox
             pp,
             right);
     }
-    void VvoxApp::loadModels()
+    void VvoxApp::loadGameObjects()
     {
         std::vector<VvoxModel::Vertex> vertices;
-        sierpinski(&vertices, 0, {0.5f, -0.5f}, {-0.5f, -0.5f}, {0.5f, 0.5f});
-        vvoxmodel = std::make_unique<VvoxModel>(vvoxDevice, vertices);
+        sierpinski(&vertices, 0, {-0.5f, 0.5f}, {0.0f, -0.5f}, {0.5f, 0.5f});
+        auto vvoxModel = std::make_shared<VvoxModel>(vvoxDevice, vertices);
+        
+        for(int i = 0; i < 50 ; ++i) {
+            
+
+            auto triangle = VvoxGameObject::createGameObject();
+            triangle.model = vvoxModel;
+            triangle.color = {.1f + i * 0.01f, 0.1f + i * 0.01, 0.1f + i * 0.01f};
+            //triangle.transform2d.translation.x = .0f + 0.01 * i * glm::sin(glm::two_pi<float>() * 10 / i );
+            //triangle.transform2d.translation.y = .0f + 0.01 * i * glm::cos(glm::two_pi<float>() * 10 / i );
+
+            triangle.transform2d.scale.x = .15f + 0.1f * i;
+            triangle.transform2d.scale.y = .15f + 0.1f * i;
+            triangle.transform2d.rotation = .25f * glm::two_pi<float>() * 0.5f * i;
+
+        gameObjects.push_back(std::move(triangle));
+
+        }
     }
 
     void VvoxApp::createPipelineLayout()
     {
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(SimplePushConstantData);
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 0;
         pipelineLayoutInfo.pSetLayouts = nullptr;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
         if (vkCreatePipelineLayout(vvoxDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create pipeline layout");
@@ -186,9 +223,7 @@ void VvoxApp::freeCommandBuffers() {
         vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
         vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
-        vvoxPipeline->bind(commandBuffers[imageIndex]);
-        vvoxmodel->bind(commandBuffers[imageIndex]);
-        vvoxmodel->draw(commandBuffers[imageIndex]);
+        renderGameObjects(commandBuffers[imageIndex]);
 
         vkCmdEndRenderPass(commandBuffers[imageIndex]);
         if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS)
@@ -196,6 +231,29 @@ void VvoxApp::freeCommandBuffers() {
             std::runtime_error("failed to record to command Buffer");
         }
     }
+
+    void VvoxApp::renderGameObjects(VkCommandBuffer commandBuffer) {
+        vvoxPipeline->bind(commandBuffer);
+
+        for ( auto& obj: gameObjects ) {
+            obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.1f, glm::two_pi<float>());
+
+            SimplePushConstantData push{};
+            push.offset = obj.transform2d.translation;
+            push.color = obj.color;
+            push.transform = obj.transform2d.mat2();
+            vkCmdPushConstants(
+                commandBuffer, 
+                pipelineLayout,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0, 
+                sizeof(SimplePushConstantData),
+                &push);
+             obj.model->bind(commandBuffer);
+             obj.model->draw(commandBuffer);
+        }
+    }
+
     void VvoxApp::drawFrame()
     {
         uint32_t imageIndex;

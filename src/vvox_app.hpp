@@ -5,6 +5,8 @@
 #include "vvox_device.hpp"
 #include "vvox_swap_chain.hpp"
 #include "vvox_model.hpp"
+#include "vvox_game_object.hpp"
+
 
 #include <memory>
 #include <vector>
@@ -25,7 +27,7 @@ namespace vvox
     void run();
 
   private:
-    void loadModels();
+    void loadGameObjects();
     void createPipelineLayout();
     void createPipeline();
     void createCommandBuffers();
@@ -33,7 +35,7 @@ namespace vvox
     void drawFrame();
     void recreateSwapChain();
     void recordCommandBuffer(int imageIndex);
-
+    void renderGameObjects(VkCommandBuffer commandBuffer);
 
     VvoxWindow vvoxWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
 
@@ -44,6 +46,6 @@ namespace vvox
     std::unique_ptr<VvoxPipeline> vvoxPipeline;
     VkPipelineLayout pipelineLayout;
     std::vector<VkCommandBuffer> commandBuffers;
-    std::unique_ptr<VvoxModel> vvoxmodel;
+    std::vector<VvoxGameObject> gameObjects;
   };
 } // namespace vvox
